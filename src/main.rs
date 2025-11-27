@@ -15,17 +15,18 @@ mod utils;
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
+    env_logger::init();
     let db_url: String = env::var("DATABASE_URL").expect("DATABASE_URL must be set in .env");
     let db: DatabaseConnection = Database::connect(&db_url)
         .await
         .expect("Failed to connect to the database");
-    println!("✅ Database connected");
+    println!("Database connected");
     let host: String = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
     let port: u16 = env::var("PORT")
         .unwrap_or_else(|_| "8080".to_string())
         .parse()
         .expect("PORT must be a valid u16");
-    println!("🚀 Server running at http://{}:{}", host, port);
+    println!("Server running at http://{}:{}", host, port);
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(db.clone()))

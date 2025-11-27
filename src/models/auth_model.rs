@@ -29,13 +29,13 @@ impl ActiveModelBehavior for ActiveModel {}
 // Data Transfer Objects (DTOs)
 //================================
 #[derive(Deserialize)]
-pub struct Logindto {
+pub struct LoginRequest {
     pub username: String,
     pub password: String,
 }
 
 #[derive(Deserialize)]
-pub struct Registerdto {
+pub struct RegisterRequest {
     pub username: String,
     pub password: String,
     pub email: String,
@@ -45,8 +45,8 @@ pub struct Registerdto {
 //===============================
 // From Trait Implementation
 //===============================
-impl From<(Registerdto, String)> for ActiveModel {
-    fn from((data, hashed_password): (Registerdto, String)) -> Self {
+impl From<(RegisterRequest, String)> for ActiveModel {
+    fn from((data, hashed_password): (RegisterRequest, String)) -> Self {
         let time_now = chrono::Utc::now().naive_utc();
         Self {
             username: Set(data.username),

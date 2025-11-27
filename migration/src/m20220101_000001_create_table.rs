@@ -1,4 +1,4 @@
-use sea_orm_migration::{prelude::*, schema::*};
+use sea_orm_migration::{prelude::*};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -18,9 +18,9 @@ impl MigrationTrait for Migration {
                             .auto_increment()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(AuthUsers::Username).string().not_null())
+                    .col(ColumnDef::new(AuthUsers::Username).string().not_null().unique_key())
                     .col(ColumnDef::new(AuthUsers::Password).string().not_null())
-                    .col(ColumnDef::new(AuthUsers::Email).string().not_null())
+                    .col(ColumnDef::new(AuthUsers::Email).string().not_null().unique_key())
                     .col(ColumnDef::new(AuthUsers::Phone).string().not_null())
                     .col(
                         ColumnDef::new(AuthUsers::Active)
