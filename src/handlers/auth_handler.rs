@@ -8,17 +8,18 @@ use argon2::{
 };
 use sea_orm::Condition;
 use sea_orm::DatabaseConnection;
+use sea_orm::error::SqlErr;
 use sea_orm::entity::prelude::*;
 use tracing::{debug, error, info, warn};
 use validator::Validate;
+use serde_json::json;
 
 //===============================
 // Actix-web Handlers
 //===============================
 #[get("/")]
 pub async fn index() -> impl Responder {
-
-    HttpResponse::Ok().json("Hello world!")
+    HttpResponse::Ok().json(json!({"code":200,"message":"Hello world!"}))
 }
 
 #[post("/login")]
@@ -29,7 +30,7 @@ pub async fn login(
 ) -> impl Responder {
     if let Err(e) = form.validate(){
         warn!("Validation error during login: {:?}", e);
-        return HttpResponse::BadRequest().json(format!("Validation error: {:?}", e));
+        return HttpResponse::BadRequest().json(json!({"code":400,"message":"Validation error","errors":e}));
     }
 
     let client_ip = req
@@ -53,11 +54,11 @@ pub async fn login(
         }
         Ok(None) => {
             warn!("Login failed: user {} not found from IP {}", form.username, client_ip);
-            return HttpResponse::Unauthorized().json("invalid credentials");
+            return HttpResponse::Unauthorized().json(json!({"code":401,"message":"invalid credentials"}));
         }
         Err(e) => {
             error!("Database error: {}", e);
-            return HttpResponse::InternalServerError().json("Internal server error");
+            return HttpResponse::InternalServerError().json(json!({"code":500,"message":"Internal server error"}));
         }
     };
 
@@ -96,17 +97,17 @@ pub async fn login(
             // Inner Layer (Ok): Password verification succeeded.
             Ok(()) => {
                 info!("User {} logged in successfully from IP {}", form.username, client_ip);
-                HttpResponse::Ok().json("Login successful")
+                HttpResponse::Ok().json(json!({"code":200,"message":"Login successful"}))
             }
 
             // Inner Layer (Err): Logic error (Wrong password or Malformed hash).
             Err(err_msg) => {
                 if err_msg.contains("parsing error") {
                     error!("{}", err_msg);
-                    HttpResponse::InternalServerError().json("Internal server error")
+                    HttpResponse::InternalServerError().json(json!({"code":500,"message":"Internal server error"}))
                 } else {
                     warn!("Login failed: invalid password for user {} from IP {}", form.username, client_ip);
-                    HttpResponse::Unauthorized().json("invalid credentials")
+                    HttpResponse::Unauthorized().json(json!({"code":401,"message":"invalid credentials"}))
                 }
             }
         },
@@ -114,7 +115,7 @@ pub async fn login(
         // Outer Layer (Err): The thread pool failed to execute the task (e.g., Pool overloaded or Cancelled).
         Err(e) => {
             error!("Blocking execution error (Thread pool issue): {}", e);
-            HttpResponse::InternalServerError().json("Internal server error")
+            HttpResponse::InternalServerError().json(json!({"code":500,"message":"Internal server error"}))
         }
     }
 }
@@ -126,7 +127,7 @@ pub async fn register(
 ) -> impl Responder {
     if let Err(e) = form.validate(){
         warn!("Validation error during registration: {:?}", e);
-        return HttpResponse::BadRequest().json(format!("Validation error: {:?}", e));
+        return HttpResponse::BadRequest().json(json!({"code":400,"message":"Validation error","errors":e}));
     }
     // 1. Check for Existing User (Async I/O)
     // Main Thread / Async
@@ -143,20 +144,20 @@ pub async fn register(
         Ok(Some(res)) => {
             if res.username == form.username {
                 warn!("Registration failed: username {} already exists", form.username);
-                return HttpResponse::BadRequest().json("username already exists");
+                return HttpResponse::Conflict().json(json!({"code":409,"message":"username already exists"}));
             }
             if res.email == form.email {
                 warn!("Registration failed: email {} already exists", form.email);
-                return HttpResponse::BadRequest().json("email already exists");
+                return HttpResponse::Conflict().json(json!({"code":409,"message":"email already exists"}));
             } else {
                 warn!("Registration failed: user/email already exists");
-                return HttpResponse::BadRequest().json("username or email already exists");
+                return HttpResponse::Conflict().json(json!({"code":409,"message":"user/email already exists"}));
             }
         }
         Ok(None) => (), // No duplicate found, proceed.
         Err(e) => {
             error!("Database error: {}", e);
-            return HttpResponse::InternalServerError().json("Internal server error");
+            return HttpResponse::InternalServerError().json(json!({"code":500,"message":"Internal server error"}));
         }
     };
 
@@ -185,13 +186,13 @@ pub async fn register(
         // Outer Ok + Inner Err: Argon2 failed to hash (e.g., internal library error).
         Ok(Err(e)) => {
             error!("Hashing logic error: {}", e);
-            return HttpResponse::InternalServerError().json("Internal server error");
+            return HttpResponse::InternalServerError().json(json!({"code":500,"message":"Internal server error"}));
         }
 
         // Outer Err: Thread pool execution failed.
         Err(e) => {
             error!("Blocking execution error: {}", e);
-            return HttpResponse::InternalServerError().json("Internal server error");
+            return HttpResponse::InternalServerError().json(json!({"code":500,"message":"Internal server error"}));
         }
     };
 
@@ -202,11 +203,18 @@ pub async fn register(
     match Entity::insert(create_user).exec(db.get_ref()).await {
         Ok(res) => {
             info!("New user registered with ID: {}", res.last_insert_id);
-            HttpResponse::Ok().json("User registered successfully")
+            HttpResponse::Created().json(json!({"code":201,"message":"User registered successfully","user_id":res.last_insert_id}))
         }
-        Err(e) => {
-            error!("Database insertion error: {}", e);
-            HttpResponse::InternalServerError().json("Internal server error")
-        }
+        Err(db_err) =>
+            match db_err.sql_err() {
+            Some(SqlErr::UniqueConstraintViolation(msg)) => {
+                warn!("Registration failed due to unique constraint violation: {}", msg);
+                HttpResponse::Conflict().json(json!({"code":409,"message":"User with provided details already exists"}))
+            }
+            _ => {
+                error!("Database insertion error: {}", db_err);
+                HttpResponse::InternalServerError().json(json!({"code":500,"message":"Internal server error"}))
+            }
+        },
     }
 }

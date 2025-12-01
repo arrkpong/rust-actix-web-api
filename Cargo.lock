@@ -1900,12 +1900,12 @@ version = "0.1.0"
 dependencies = [
  "actix-web",
  "argon2",
- "async-trait",
  "chrono",
  "dotenv",
  "rand_core 0.9.3",
  "sea-orm",
  "serde",
+ "serde_json",
  "tracing",
  "tracing-actix-web",
  "tracing-subscriber",

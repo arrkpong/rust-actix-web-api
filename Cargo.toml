@@ -10,6 +10,7 @@ actix-web = { version = "4.12.1" }
 
 #JSON serialization/deserialization
 serde = { version = "1.0.228", features = ["derive"] }
+serde_json = { version = "1.0.145" }
 
 #Environment variables
 dotenv = { version = "0.15.0" }
@@ -29,4 +30,4 @@ tracing-actix-web = { version = "0.7.19" }
 
 #Data validation
 validator = { version = "0.20.0" , features = ["derive"] }
-async-trait = "0.1"
+
