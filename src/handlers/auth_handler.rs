@@ -6,16 +6,17 @@ use argon2::{
     Argon2,
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, rand_core::OsRng},
 };
-use log::*;
 use sea_orm::Condition;
 use sea_orm::DatabaseConnection;
 use sea_orm::entity::prelude::*;
+use tracing::{debug, error, info, warn};
 
 //===============================
 // Actix-web Handlers
 //===============================
 #[get("/")]
 pub async fn index() -> impl Responder {
+    
     HttpResponse::Ok().body("Hello world!")
 }
 
