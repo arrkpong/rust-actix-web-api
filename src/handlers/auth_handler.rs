@@ -10,14 +10,15 @@ use sea_orm::Condition;
 use sea_orm::DatabaseConnection;
 use sea_orm::entity::prelude::*;
 use tracing::{debug, error, info, warn};
+use validator::Validate;
 
 //===============================
 // Actix-web Handlers
 //===============================
 #[get("/")]
 pub async fn index() -> impl Responder {
-    
-    HttpResponse::Ok().body("Hello world!")
+
+    HttpResponse::Ok().json("Hello world!")
 }
 
 #[post("/login")]
@@ -26,6 +27,11 @@ pub async fn login(
     req: HttpRequest,
     form: web::Json<LoginRequest>,
 ) -> impl Responder {
+    if let Err(e) = form.validate(){
+        warn!("Validation error during login: {:?}", e);
+        return HttpResponse::BadRequest().json(format!("Validation error: {:?}", e));
+    }
+
     let client_ip = req
         .connection_info()
         .realip_remote_addr()
@@ -34,6 +40,7 @@ pub async fn login(
 
     // 1. Database Query (Async I/O Bound)
     // This runs on the main async thread pool. It yields control while waiting for the DB.
+    // Main Thread / Async
     let user = match Entity::find()
         .filter(Column::Username.eq(&form.username))
         .filter(Column::Active.eq(true))
@@ -46,11 +53,11 @@ pub async fn login(
         }
         Ok(None) => {
             warn!("Login failed: user {} not found from IP {}", form.username, client_ip);
-            return HttpResponse::Unauthorized().body("invalid credentials");
+            return HttpResponse::Unauthorized().json("invalid credentials");
         }
         Err(e) => {
             error!("Database error: {}", e);
-            return HttpResponse::InternalServerError().body("Internal server error");
+            return HttpResponse::InternalServerError().json("Internal server error");
         }
     };
 
@@ -63,6 +70,7 @@ pub async fn login(
     // 3. CPU Intensive Task (Argon2 Verification)
     // We offload this to `web::block`, which runs on a separate thread pool dedicated to blocking operations.
     // This prevents the main async worker threads from freezing during the heavy calculation.
+    // Blocking Thread / Sync
     let verify_result = web::block(move || {
         // --- Inside Blocking Thread ---
 
@@ -88,17 +96,17 @@ pub async fn login(
             // Inner Layer (Ok): Password verification succeeded.
             Ok(()) => {
                 info!("User {} logged in successfully from IP {}", form.username, client_ip);
-                HttpResponse::Ok().body("Login successful")
+                HttpResponse::Ok().json("Login successful")
             }
 
             // Inner Layer (Err): Logic error (Wrong password or Malformed hash).
             Err(err_msg) => {
                 if err_msg.contains("parsing error") {
                     error!("{}", err_msg);
-                    HttpResponse::InternalServerError().body("Internal server error")
+                    HttpResponse::InternalServerError().json("Internal server error")
                 } else {
                     warn!("Login failed: invalid password for user {} from IP {}", form.username, client_ip);
-                    HttpResponse::Unauthorized().body("invalid credentials")
+                    HttpResponse::Unauthorized().json("invalid credentials")
                 }
             }
         },
@@ -106,7 +114,7 @@ pub async fn login(
         // Outer Layer (Err): The thread pool failed to execute the task (e.g., Pool overloaded or Cancelled).
         Err(e) => {
             error!("Blocking execution error (Thread pool issue): {}", e);
-            HttpResponse::InternalServerError().body("Internal server error")
+            HttpResponse::InternalServerError().json("Internal server error")
         }
     }
 }
@@ -116,7 +124,12 @@ pub async fn register(
     db: web::Data<DatabaseConnection>,
     form: web::Json<RegisterRequest>,
 ) -> impl Responder {
+    if let Err(e) = form.validate(){
+        warn!("Validation error during registration: {:?}", e);
+        return HttpResponse::BadRequest().json(format!("Validation error: {:?}", e));
+    }
     // 1. Check for Existing User (Async I/O)
+    // Main Thread / Async
     let user_check = Entity::find()
         .filter(
             Condition::any()
@@ -130,20 +143,20 @@ pub async fn register(
         Ok(Some(res)) => {
             if res.username == form.username {
                 warn!("Registration failed: username {} already exists", form.username);
-                return HttpResponse::BadRequest().body("username already exists");
+                return HttpResponse::BadRequest().json("username already exists");
             }
             if res.email == form.email {
                 warn!("Registration failed: email {} already exists", form.email);
-                return HttpResponse::BadRequest().body("email already exists");
+                return HttpResponse::BadRequest().json("email already exists");
             } else {
                 warn!("Registration failed: user/email already exists");
-                return HttpResponse::BadRequest().body("username or email already exists");
+                return HttpResponse::BadRequest().json("username or email already exists");
             }
         }
         Ok(None) => (), // No duplicate found, proceed.
         Err(e) => {
             error!("Database error: {}", e);
-            return HttpResponse::InternalServerError().body("Internal server error");
+            return HttpResponse::InternalServerError().json("Internal server error");
         }
     };
 
@@ -152,6 +165,7 @@ pub async fn register(
     // 2. CPU Intensive Task (Argon2 Hashing)
     // Hashing is computationally expensive by design (to prevent brute-force).
     // Offloading to `web::block` ensures the server remains responsive to other requests.
+    // Blocking Thread / Sync
     let hash_result = web::block(move || {
         let salt = SaltString::generate(&mut OsRng);
         let argon2 = Argon2::default();
@@ -171,13 +185,13 @@ pub async fn register(
         // Outer Ok + Inner Err: Argon2 failed to hash (e.g., internal library error).
         Ok(Err(e)) => {
             error!("Hashing logic error: {}", e);
-            return HttpResponse::InternalServerError().body("Internal server error");
+            return HttpResponse::InternalServerError().json("Internal server error");
         }
 
         // Outer Err: Thread pool execution failed.
         Err(e) => {
             error!("Blocking execution error: {}", e);
-            return HttpResponse::InternalServerError().body("Internal server error");
+            return HttpResponse::InternalServerError().json("Internal server error");
         }
     };
 
@@ -188,11 +202,11 @@ pub async fn register(
     match Entity::insert(create_user).exec(db.get_ref()).await {
         Ok(res) => {
             info!("New user registered with ID: {}", res.last_insert_id);
-            HttpResponse::Ok().body("User registered successfully")
+            HttpResponse::Ok().json("User registered successfully")
         }
         Err(e) => {
             error!("Database insertion error: {}", e);
-            HttpResponse::InternalServerError().body("Internal server error")
+            HttpResponse::InternalServerError().json("Internal server error")
         }
     }
 }

@@ -7,6 +7,8 @@ edition = "2024"
 [dependencies]
 #Web framework
 actix-web = { version = "4.12.1" }
+
+#JSON serialization/deserialization
 serde = { version = "1.0.228", features = ["derive"] }
 
 #Environment variables
@@ -15,10 +17,16 @@ dotenv = { version = "0.15.0" }
 #Database ORM
 sea-orm = { version = "1.1.19", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros", "with-chrono"] }
 chrono = { version = "0.4.42" }
+
 #security
 argon2 = { version = "0.5.3" }
 rand_core = { version = "0.9.3", features = ["std"] }
 
+#Logging and tracing
 tracing = { version = "0.1.41" }
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 tracing-actix-web = { version = "0.7.19" }
+
+#Data validation
+validator = { version = "0.20.0" , features = ["derive"] }
+async-trait = "0.1"
