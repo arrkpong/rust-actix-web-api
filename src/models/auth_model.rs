@@ -68,15 +68,11 @@ pub struct RegisterRequest {
         message = "Username must be between 3 and 30 characters"
     ))]
     pub username: String,
-    #[validate(custom(
-        function = "validate_password"
-    ))]
+    #[validate(custom(function = "validate_password"))]
     pub password: String,
     #[validate(email(message = "Invalid email format"))]
     pub email: String,
-    #[validate(custom(
-        function = "validate_phone"
-    ))]
+    #[validate(custom(function = "validate_phone"))]
     pub phone: String,
 }
 
@@ -105,7 +101,8 @@ fn validate_password(password: &str) -> Result<(), ValidationError> {
         Ok(())
     } else {
         let mut err = ValidationError::new("password_complexity");
-        err.message = Some("Password must verify at least 1 Uppercase, 1 Lowercase and 1 Number".into());
+        err.message =
+            Some("Password must verify at least 1 Uppercase, 1 Lowercase and 1 Number".into());
         Err(err)
     }
 }

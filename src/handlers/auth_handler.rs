@@ -19,6 +19,7 @@ use validator::Validate;
 //===============================
 #[get("/")]
 pub async fn index() -> impl Responder {
+    debug!("index checkpoint api.");
     HttpResponse::Ok().json(json!({"code":200,"message":"Hello world!"}))
 }
 
@@ -28,6 +29,7 @@ pub async fn login(
     req: HttpRequest,
     form: web::Json<LoginRequest>,
 ) -> impl Responder {
+    debug!("login checkpoint api.");
     if let Err(e) = form.validate() {
         warn!("Validation error during login: {:?}", e);
         return HttpResponse::BadRequest()
@@ -139,6 +141,7 @@ pub async fn register(
     db: web::Data<DatabaseConnection>,
     form: web::Json<RegisterRequest>,
 ) -> impl Responder {
+    debug!("register checkpoint api.");
     if let Err(e) = form.validate() {
         warn!("Validation error during registration: {:?}", e);
         return HttpResponse::BadRequest()

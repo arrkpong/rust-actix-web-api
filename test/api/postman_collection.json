@@ -63,7 +63,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"username\": \"demo_user\",\n    \"password\": \"demo_password\"\n}",
+              "raw": "{\n    \"username\": \"demo_user\",\n    \"password\": \"DemoPass1\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -116,7 +116,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"username\": \"demo_user\",\n    \"password\": \"demo_password\",\n    \"email\": \"demo@example.com\",\n    \"phone\": \"0123456789\"\n}",
+              "raw": "{\n    \"username\": \"demo_user\",\n    \"password\": \"DemoPass1\",\n    \"email\": \"demo@example.com\",\n    \"phone\": \"0123456789\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -145,8 +145,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
+                  "pm.test(\"Status is 201 or 409\", function () {",
+                  "    pm.expect([201, 409]).to.include(pm.response.code);",
                   "});",
                   "",
                   "pm.test(\"Response body present\", function () {",

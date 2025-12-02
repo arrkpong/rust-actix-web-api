@@ -15,6 +15,12 @@ RUN mkdir src
 COPY src ./src
 RUN cargo build --release --locked
 
+# Build migration binary
+COPY migration/Cargo.toml migration/Cargo.lock ./migration/
+RUN mkdir migration/src
+COPY migration/src ./migration/src
+RUN cargo build --release --locked --manifest-path migration/Cargo.toml
+
 FROM debian:bookworm-slim AS runtime
 
 RUN apt-get update \
@@ -24,6 +30,7 @@ RUN apt-get update \
 WORKDIR /app
 
 COPY --from=builder /app/target/release/rust-actix-web-api /usr/local/bin/rust-actix-web-api
+COPY --from=builder /app/migration/target/release/migration /usr/local/bin/migration
 
 # Ensure the server listens on all interfaces inside the container
 ENV HOST=0.0.0.0

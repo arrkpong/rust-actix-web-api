@@ -1,4 +1,14 @@
 services:
+  migration:
+    build: .
+    command: ["migration", "up"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/postgres
+    restart: "no"
+
   app:
     build: .
     env_file:
@@ -6,10 +16,12 @@ services:
     environment:
       HOST: 0.0.0.0
       PORT: 8080
-      DATABASE_URL: ${DATABASE_URL:-postgres://postgres:postgres@db:5432/postgres}
+      DATABASE_URL: postgres://postgres:postgres@db:5432/postgres
     ports:
       - "8080:8080"
     depends_on:
+      migration:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
     restart: unless-stopped
