@@ -42,9 +42,10 @@ async fn main() -> std::io::Result<()> {
         .parse()
         .expect("PORT must be a valid u16");
     info!("Server running at http://{}:{}", host, port);
+    let db_data = web::Data::new(db);
     HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::new(db.clone()))
+            .app_data(db_data.clone())
             .wrap(TracingLogger::default())
             .configure(routes::auth_route::configure_routes)
     })

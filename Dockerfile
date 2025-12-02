@@ -23,7 +23,7 @@ RUN apt-get update \
 
 WORKDIR /app
 
-COPY --from=builder /app/target/release/rust-tutorial /usr/local/bin/rust-tutorial
+COPY --from=builder /app/target/release/rust-actix-web-api /usr/local/bin/rust-actix-web-api
 
 # Ensure the server listens on all interfaces inside the container
 ENV HOST=0.0.0.0
@@ -31,4 +31,4 @@ ENV PORT=8080
 
 EXPOSE 8080
 
-CMD ["rust-tutorial"]
+CMD ["rust-actix-web-api"]

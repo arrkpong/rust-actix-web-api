@@ -11,11 +11,11 @@ Minimal Actix-web API that demonstrates user registration and login with SeaORM 
 ## Prerequisites
 - Rust toolchain (cargo)
 - Postgres database reachable via `DATABASE_URL`
-- Docker & Docker Compose (optional, for containerized setup)
+- Docker and Docker Compose (optional, for containerized setup)
 
 ## Setup (local)
-1) Copy `.env.example` to `.env` and update `DATABASE_URL`, `HOST`, and `PORT` to match your environment.  
-2) Ensure Postgres is running and the database in `DATABASE_URL` exists.  
+1) Copy `.env.example` to `.env` and update `DATABASE_URL`, `HOST`, and `PORT` to match your environment.
+2) Ensure Postgres is running and the database in `DATABASE_URL` exists.
 3) Run migrations:
    ```sh
    cd migration
@@ -31,20 +31,20 @@ Minimal Actix-web API that demonstrates user registration and login with SeaORM 
 ```sh
 docker-compose up --build
 ```
-- App: http://localhost:8080  
+- App: http://localhost:8080
 - DB: exposed on port 5432 with credentials from `.env` or defaults in `docker-compose.yml`.
 
 ## API Endpoints
-- `GET /` – health check, returns "Hello world!".
-- `POST /register` – create a user. Example:
+- `GET /` — health check, returns "Hello world!".
+- `POST /api/v1/auth/register` — create a user. Example:
   ```sh
-  curl -X POST http://localhost:8080/register \
+  curl -X POST http://localhost:8080/api/v1/auth/register \
     -H "Content-Type: application/json" \
     -d '{"username":"alice","password":"secret","email":"alice@example.com","phone":"0800000000"}'
   ```
-- `POST /login` – verify credentials. Example:
+- `POST /api/v1/auth/login` — verify credentials. Example:
   ```sh
-  curl -X POST http://localhost:8080/login \
+  curl -X POST http://localhost:8080/api/v1/auth/login \
     -H "Content-Type: application/json" \
     -d '{"username":"alice","password":"secret"}'
   ```
@@ -53,9 +53,9 @@ docker-compose up --build
 `auth_users` columns: `id`, `username`, `password` (Argon2 hash), `email`, `phone`, `active`, `created_at`, `updated_at`.
 
 ## Project Layout
-- `src/` – server, routes, handlers, models
-- `migration/` – SeaORM migration crate (`cargo run -- up` to apply)
-- `Dockerfile`, `docker-compose.yml` – container builds and services
+- `src/` — server, routes, handlers, models
+- `migration/` — SeaORM migration crate (`cargo run -- up` to apply)
+- `Dockerfile`, `docker-compose.yml` — container builds and services
 
 ## Notes
 - Passwords are hashed with Argon2 before storage.

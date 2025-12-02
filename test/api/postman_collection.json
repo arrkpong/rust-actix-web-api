@@ -7,6 +7,7 @@
   "item": [
     {
       "name": "Health",
+      "description": "Health check endpoint group",
       "item": [
         {
           "name": "GET /",
@@ -48,9 +49,10 @@
     },
     {
       "name": "Auth",
+      "description": "Authentication endpoints (login/register)",
       "item": [
         {
-          "name": "POST /login",
+          "name": "POST /api/v1/auth/login",
           "request": {
             "method": "POST",
             "header": [
@@ -69,13 +71,16 @@
               }
             },
             "url": {
-              "raw": "{{scheme}}://{{host}}:{{port}}/login",
+              "raw": "{{scheme}}://{{host}}:{{port}}/api/v1/auth/login",
               "protocol": "{{scheme}}",
               "host": [
                 "{{host}}"
               ],
               "port": "{{port}}",
               "path": [
+                "api",
+                "v1",
+                "auth",
                 "login"
               ]
             }
@@ -100,7 +105,7 @@
           ]
         },
         {
-          "name": "POST /register",
+          "name": "POST /api/v1/auth/register",
           "request": {
             "method": "POST",
             "header": [
@@ -119,13 +124,16 @@
               }
             },
             "url": {
-              "raw": "{{scheme}}://{{host}}:{{port}}/register",
+              "raw": "{{scheme}}://{{host}}:{{port}}/api/v1/auth/register",
               "protocol": "{{scheme}}",
               "host": [
                 "{{host}}"
               ],
               "port": "{{port}}",
               "path": [
+                "api",
+                "v1",
+                "auth",
                 "register"
               ]
             }

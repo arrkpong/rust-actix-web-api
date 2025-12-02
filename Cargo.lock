@@ -1895,7 +1895,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust-tutorial"
+name = "rust-actix-web-api"
 version = "0.1.0"
 dependencies = [
  "actix-web",

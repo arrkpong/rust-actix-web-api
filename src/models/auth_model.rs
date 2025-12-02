@@ -4,7 +4,7 @@ use sea_orm::{
     ActiveModelBehavior, ConnectionTrait, DeriveEntityModel, DeriveRelation, EnumIter, Set,
 };
 use serde::{Deserialize, Serialize};
-use validator::Validate;
+use validator::{Validate, ValidationError};
 
 //===============================
 // ORM Entity Definition
@@ -23,8 +23,8 @@ pub struct Model {
     pub phone: String,
     #[sea_orm(default_value = true)]
     pub active: bool,
-    pub created_at: DateTime,
-    pub updated_at: DateTime,
+    pub created_at: DateTimeWithTimeZone,
+    pub updated_at: DateTimeWithTimeZone,
 }
 
 //===============================
@@ -43,10 +43,10 @@ impl ActiveModelBehavior for ActiveModel {
         C: ConnectionTrait,
     {
         if insert {
-            self.created_at = Set(chrono::Utc::now().naive_utc());
+            self.created_at = Set(chrono::Utc::now().into());
             self.active = Set(true);
         }
-        self.updated_at = Set(chrono::Utc::now().naive_utc());
+        self.updated_at = Set(chrono::Utc::now().into());
         Ok(self)
     }
 }
@@ -68,18 +68,14 @@ pub struct RegisterRequest {
         message = "Username must be between 3 and 30 characters"
     ))]
     pub username: String,
-    #[validate(length(
-        min = 8,
-        max = 100,
-        message = "Password must be between 8 and 100 characters"
+    #[validate(custom(
+        function = "validate_password"
     ))]
     pub password: String,
     #[validate(email(message = "Invalid email format"))]
     pub email: String,
-    #[validate(length(
-        min = 10,
-        max = 15,
-        message = "Phone number must be between 10 and 15 digits"
+    #[validate(custom(
+        function = "validate_phone"
     ))]
     pub phone: String,
 }
@@ -96,5 +92,33 @@ impl From<(RegisterRequest, String)> for ActiveModel {
             phone: Set(data.phone),
             ..Default::default()
         }
+    }
+}
+
+fn validate_password(password: &str) -> Result<(), ValidationError> {
+    let has_upper = password.chars().any(|c| c.is_ascii_uppercase());
+    let has_lower = password.chars().any(|c| c.is_ascii_lowercase());
+    let has_digit = password.chars().any(|c| c.is_ascii_digit());
+    let long_enough = password.chars().count() >= 8;
+
+    if has_upper && has_lower && has_digit && long_enough {
+        Ok(())
+    } else {
+        let mut err = ValidationError::new("password_complexity");
+        err.message = Some("Password must verify at least 1 Uppercase, 1 Lowercase and 1 Number".into());
+        Err(err)
+    }
+}
+
+fn validate_phone(phone: &str) -> Result<(), ValidationError> {
+    let len = phone.chars().count();
+    let all_digits = phone.chars().all(|c| c.is_ascii_digit());
+
+    if all_digits && (10..=15).contains(&len) {
+        Ok(())
+    } else {
+        let mut err = ValidationError::new("phone_format");
+        err.message = Some("Phone number must be digits only".into());
+        Err(err)
     }
 }

@@ -28,8 +28,8 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .default(true),
                     )
-                    .col(ColumnDef::new(AuthUsers::CreatedAt).date_time().not_null())
-                    .col(ColumnDef::new(AuthUsers::UpdatedAt).date_time().not_null())
+                    .col(ColumnDef::new(AuthUsers::CreatedAt).timestamp_with_time_zone().not_null())
+                    .col(ColumnDef::new(AuthUsers::UpdatedAt).timestamp_with_time_zone().not_null())
                     .to_owned(),
             )
             .await
