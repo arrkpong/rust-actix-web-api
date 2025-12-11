@@ -15,11 +15,12 @@ serde_json = { version = "1.0.145" }
 #Environment variables
 dotenv = { version = "0.15.0" }
 
-#Database ORM
+#Database and ORM
 sea-orm = { version = "1.1.19", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros", "with-chrono"] }
 chrono = { version = "0.4.42" , features = ["serde"] }
+redis = { version = "0.32.7", features = ["tokio-comp"] }
 
-#security
+#Security and authentication
 argon2 = { version = "0.5.3" }
 rand_core = { version = "0.9.3", features = ["std"] }
 jsonwebtoken = { version = "10.2.0", features = ["rust_crypto"] }
@@ -30,7 +31,7 @@ tracing = { version = "0.1.41" }
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 tracing-actix-web = { version = "0.7.19" }
 
-#Data validation
+#Input validation
 validator = { version = "0.20.0" , features = ["derive"] }
 futures = "0.3.31"
 
