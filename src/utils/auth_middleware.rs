@@ -23,9 +23,7 @@ impl FromRequest for AuthenticatedUser {
             .headers()
             .get("Authorization")
             .map(|header| header.to_owned());
-        let redis = req
-            .app_data::<web::Data<ConnectionManager>>()
-            .cloned();
+        let redis = req.app_data::<web::Data<ConnectionManager>>().cloned();
 
         Box::pin(async move {
             let auth_header = match auth_header {

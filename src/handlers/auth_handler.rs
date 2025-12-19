@@ -12,9 +12,9 @@ use chrono::Utc;
 use redis::AsyncCommands;
 use redis::aio::ConnectionManager;
 use sea_orm::Condition;
-use sea_orm::{ActiveModelTrait, DatabaseConnection};
 use sea_orm::entity::prelude::*;
 use sea_orm::error::SqlErr;
+use sea_orm::{ActiveModelTrait, DatabaseConnection};
 use serde_json::json;
 use tracing::{debug, error, info, warn};
 use validator::Validate;
@@ -243,7 +243,8 @@ pub async fn register(
     match create_user.insert(db.get_ref()).await {
         Ok(res) => {
             info!("New user registered with ID: {}", res.id);
-            HttpResponse::Created().json(json!({"code":201,"message":"User registered successfully","user_id":res.id}))
+            HttpResponse::Created()
+                .json(json!({"code":201,"message":"User registered successfully","user_id":res.id}))
         }
         Err(db_err) => match db_err.sql_err() {
             Some(SqlErr::UniqueConstraintViolation(msg)) => {
@@ -271,10 +272,7 @@ pub async fn profile(user: AuthenticatedUser) -> impl Responder {
 }
 
 #[post("/logout")]
-pub async fn logout(
-    req: HttpRequest,
-    redis: web::Data<ConnectionManager>,
-) -> impl Responder {
+pub async fn logout(req: HttpRequest, redis: web::Data<ConnectionManager>) -> impl Responder {
     debug!("logout checkpoint api.");
     let auth_header = match req.headers().get("Authorization") {
         Some(header) => header,
@@ -310,18 +308,15 @@ pub async fn logout(
     let exp = claims.exp as i64;
     let ttl = exp.saturating_sub(now);
     if ttl == 0 {
-        return HttpResponse::Ok()
-            .json(json!({"code":200,"message":"Token already expired"}));
+        return HttpResponse::Ok().json(json!({"code":200,"message":"Token already expired"}));
     }
 
     let mut conn = redis.get_ref().clone();
     let blacklist_key = format!("bl:{}", token);
-    let set_res: Result<(), redis::RedisError> =
-        conn.set_ex(blacklist_key, "1", ttl as u64).await;
+    let set_res: Result<(), redis::RedisError> = conn.set_ex(blacklist_key, "1", ttl as u64).await;
 
     match set_res {
-        Ok(_) => HttpResponse::Ok()
-            .json(json!({"code":200,"message":"Logout successful"})),
+        Ok(_) => HttpResponse::Ok().json(json!({"code":200,"message":"Logout successful"})),
         Err(e) => {
             error!("Redis error during logout: {}", e);
             HttpResponse::InternalServerError()
