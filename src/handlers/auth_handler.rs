@@ -1,13 +1,16 @@
 // src/handler/auth_handler.rs
 use crate::models::auth_model::{ActiveModel, Column, Entity, LoginRequest, RegisterRequest};
 use crate::utils::auth_middleware::AuthenticatedUser;
-use crate::utils::jwt::encode_jwt;
+use crate::utils::jwt::{decode_jwt, encode_jwt};
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post, web};
 use argon2::password_hash::SaltString;
 use argon2::{
     Argon2,
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, rand_core::OsRng},
 };
+use chrono::Utc;
+use redis::AsyncCommands;
+use redis::aio::ConnectionManager;
 use sea_orm::Condition;
 use sea_orm::{ActiveModelTrait, DatabaseConnection};
 use sea_orm::entity::prelude::*;
@@ -265,4 +268,64 @@ pub async fn profile(user: AuthenticatedUser) -> impl Responder {
     debug!("profile checkpoint api.");
     HttpResponse::Ok()
         .json(json!({"code":200,"message":"Profile fetched successfully","username":user.username}))
+}
+
+#[post("/logout")]
+pub async fn logout(
+    req: HttpRequest,
+    redis: web::Data<ConnectionManager>,
+) -> impl Responder {
+    debug!("logout checkpoint api.");
+    let auth_header = match req.headers().get("Authorization") {
+        Some(header) => header,
+        None => {
+            return HttpResponse::Unauthorized()
+                .json(json!({"code":401,"message":"Authorization header missing"}));
+        }
+    };
+
+    let auth_str = match auth_header.to_str() {
+        Ok(str) => str,
+        Err(_) => {
+            return HttpResponse::Unauthorized()
+                .json(json!({"code":401,"message":"Invalid Authorization header"}));
+        }
+    };
+
+    if !auth_str.starts_with("Bearer ") {
+        return HttpResponse::Unauthorized()
+            .json(json!({"code":401,"message":"Invalid Authorization scheme"}));
+    }
+
+    let token = &auth_str[7..]; // Skip "Bearer "
+    let claims = match decode_jwt(token) {
+        Ok(claims) => claims,
+        Err(_) => {
+            return HttpResponse::Unauthorized()
+                .json(json!({"code":401,"message":"Invalid or expired token"}));
+        }
+    };
+
+    let now = Utc::now().timestamp();
+    let exp = claims.exp as i64;
+    let ttl = exp.saturating_sub(now);
+    if ttl == 0 {
+        return HttpResponse::Ok()
+            .json(json!({"code":200,"message":"Token already expired"}));
+    }
+
+    let mut conn = redis.get_ref().clone();
+    let blacklist_key = format!("bl:{}", token);
+    let set_res: Result<(), redis::RedisError> =
+        conn.set_ex(blacklist_key, "1", ttl as u64).await;
+
+    match set_res {
+        Ok(_) => HttpResponse::Ok()
+            .json(json!({"code":200,"message":"Logout successful"})),
+        Err(e) => {
+            error!("Redis error during logout: {}", e);
+            HttpResponse::InternalServerError()
+                .json(json!({"code":500,"message":"Internal server error"}))
+        }
+    }
 }

@@ -18,7 +18,7 @@ dotenv = { version = "0.15.0" }
 #Database and ORM
 sea-orm = { version = "1.1.19", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros", "with-chrono"] }
 chrono = { version = "0.4.42" , features = ["serde"] }
-redis = { version = "0.32.7", features = ["tokio-comp"] }
+redis = { version = "1.0.1", features = ["tokio-comp", "connection-manager"] }
 
 #Security and authentication
 argon2 = { version = "0.5.3" }
@@ -27,9 +27,9 @@ jsonwebtoken = { version = "10.2.0", features = ["rust_crypto"] }
 #actix-cors = { version = "0.7.1"}
 
 #Logging and tracing
-tracing = { version = "0.1.41" }
-tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
-tracing-actix-web = { version = "0.7.19" }
+tracing = { version = "0.1.44" }
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+tracing-actix-web = { version = "0.7.20" }
 
 #Input validation
 validator = { version = "0.20.0" , features = ["derive"] }

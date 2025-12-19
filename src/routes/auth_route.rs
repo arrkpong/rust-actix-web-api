@@ -1,5 +1,5 @@
 // src/routes/auth_route.rs
-use crate::handlers::auth_handler::{index, login, profile, register};
+use crate::handlers::auth_handler::{index, login, logout, profile, register};
 use actix_web::web;
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(index);
@@ -7,6 +7,7 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         web::scope("/api/v1/auth")
             .service(register)
             .service(login)
+            .service(logout)
             .service(profile),
     );
 }
